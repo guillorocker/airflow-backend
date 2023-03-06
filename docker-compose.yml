@@ -1,0 +1,40 @@
+---
+version: '3.6'
+
+services:
+
+  airflow:
+      image: ${REPO}
+      container_name: airflow
+      volumes:
+        - ./dags:/opt/airflow/dags
+        - ./sql:/opt/airflow/sql
+        - ./tests:/opt/airflow/tests
+        - ./data:/opt/airflow/data
+        - ./requirements.txt:/opt/airflow/requirements.txt
+        - ./file:/opt/airflow/file
+        - ./assets:/opt/airflow/assets
+      environment:
+        - AIRFLOW_HOME=/opt/airflow
+        - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+        - AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+        - AIRFLOW__CORE__LOAD_EXAMPLES=false
+        - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=false
+        - AIRFLOW__API__AUTH_BACKEND=${AIRFLOW_API_BACKEND}
+      ports:
+        - 8080:8080
+      command: 'bash -c "pip3 install -r requirements.txt && airflow db init && airflow webserver -D && airflow scheduler -D"'
+
+  olap-db:
+    image: postgres:11.4-alpine
+    restart: always
+    container_name: olap-db
+    ports:
+      - 54321:54321
+    volumes:
+          - ./pgdata:/var/lib/postgresql/data
+          - ./sql/create_inflarion_rate.sql:/docker-entrypoint-initdb.d/create_inflarion_rate.sql
+    environment:
+      - POSTGRES_USER=${DEST_USER}
+      - POSTGRES_PASSWORD=${DEST_PASSWORD}
+      - POSTGRES_DB=${DEST_DB}
